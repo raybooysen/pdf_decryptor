@@ -1,0 +1,4 @@
+PyPDF2
+pycryptodome
+openai
+python-dotenv 
