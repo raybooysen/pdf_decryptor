@@ -1,5 +1,7 @@
 # PDF Decryptor & Smart Renamer
 
+I built this because my health insurer (AIA) sends encrypted PDFs with awful filenames. This app tries to give you better names as well as decrypting
+
 This app decrypts all password-protected PDFs in a specified folder, uses OpenAI to generate a smart filename based on the PDF content, and saves the decrypted, renamed files to a destination folder.
 
 ## Features
