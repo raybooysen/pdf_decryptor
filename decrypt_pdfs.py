@@ -68,9 +68,9 @@ def main():
 
     for filename in os.listdir(input_dir):
         if filename.lower().endswith('.pdf'):
-            encrypted_path = os.path.join(input_dir, filename)
+            input_path = os.path.join(input_dir, filename)
             try:
-                with open(encrypted_path, 'rb') as infile:
+                with open(input_path, 'rb') as infile:
                     reader = PdfReader(infile)
                     if reader.is_encrypted:
                         reader.decrypt(password)
@@ -83,12 +83,12 @@ def main():
                     new_filename = get_filename_from_openai(first_page_text or '', client)
                     if not new_filename:
                         new_filename = filename
-                    decrypted_path = os.path.join(output_dir, new_filename)
-                    with open(decrypted_path, 'wb') as outfile:
+                    output_path = os.path.join(output_dir, new_filename)
+                    with open(output_path, 'wb') as outfile:
                         writer.write(outfile)
-                print(f"Decrypted: {filename} -> {new_filename}")
+                print(f"Processed: {filename} -> {new_filename}")
             except Exception as e:
-                print(f"Failed to decrypt {filename}: {e}")
+                print(f"Failed to process {filename}: {e}")
 
 if __name__ == "__main__":
     main() 
