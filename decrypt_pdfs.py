@@ -10,14 +10,18 @@ def get_env_or_default(var, default=None):
     return os.getenv(var) if os.getenv(var) is not None else default
 
 def get_filename_from_openai(text, client):
-    prompt = (
-        "Given the following PDF content, generate a concise, descriptive filename. Ideally we want the claimant or claimant name and the date of the claim or submission.  Include the document type if possible and a short description "
-        "Only return the filename, do not include any explanation.\n\n"
-        f"PDF Content:\n{text[:2000]}"
-    )
+    prompt_template = os.getenv("PROMPT")
+    if not prompt_template:
+        print("Error: PROMPT environment variable must be set in your .env file.")
+        exit(1)
+    model = os.getenv("MODEL")
+    if not model:
+        print("Error: MODEL environment variable must be set in your .env file.")
+        exit(1)
+    prompt = prompt_template.replace("{text}", text[:2000])
     try:
         response = client.chat.completions.create(
-            model="gpt-4.1-nano-2025-04-14",
+            model=model,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=30,
             temperature=0.2,
@@ -34,13 +38,13 @@ def get_filename_from_openai(text, client):
 
 def main():
     parser = argparse.ArgumentParser(description="Decrypt PDFs and generate descriptive filenames using OpenAI.")
-    parser.add_argument('--encrypted_dir', type=str, default=get_env_or_default('ENCRYPTED_DIR', 'Encrypted'), help='Directory containing encrypted PDFs')
-    parser.add_argument('--unencrypted_dir', type=str, default=get_env_or_default('UNENCRYPTED_DIR', 'Unencrypted'), help='Directory to save decrypted PDFs')
+    parser.add_argument('--input', type=str, default=get_env_or_default('INPUT_DIR', 'input'), help='Directory containing encrypted PDFs')
+    parser.add_argument('--output', type=str, default=get_env_or_default('OUTPUT_DIR', 'output'), help='Directory to save decrypted PDFs')
     parser.add_argument('--password', type=str, default=get_env_or_default('PDF_PASSWORD'), help='Password for encrypted PDFs (default: from .env PDF_PASSWORD)')
     args = parser.parse_args()
 
-    encrypted_dir = args.encrypted_dir
-    unencrypted_dir = args.unencrypted_dir
+    input_dir = args.input
+    output_dir = args.output
     password = args.password
     openai_api_key = get_env_or_default('OPENAI_API_KEY')
 
@@ -53,18 +57,18 @@ def main():
 
     client = openai.OpenAI(api_key=openai_api_key)
 
-    if not os.path.exists(unencrypted_dir):
-        os.makedirs(unencrypted_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    # Delete all files in the Unencrypted folder before decrypting
-    for f in os.listdir(unencrypted_dir):
-        file_path = os.path.join(unencrypted_dir, f)
+    # Delete all files in the output folder before decrypting
+    for f in os.listdir(output_dir):
+        file_path = os.path.join(output_dir, f)
         if os.path.isfile(file_path):
             os.remove(file_path)
 
-    for filename in os.listdir(encrypted_dir):
+    for filename in os.listdir(input_dir):
         if filename.lower().endswith('.pdf'):
-            encrypted_path = os.path.join(encrypted_dir, filename)
+            encrypted_path = os.path.join(input_dir, filename)
             try:
                 with open(encrypted_path, 'rb') as infile:
                     reader = PdfReader(infile)
@@ -79,7 +83,7 @@ def main():
                     new_filename = get_filename_from_openai(first_page_text or '', client)
                     if not new_filename:
                         new_filename = filename
-                    decrypted_path = os.path.join(unencrypted_dir, new_filename)
+                    decrypted_path = os.path.join(output_dir, new_filename)
                     with open(decrypted_path, 'wb') as outfile:
                         writer.write(outfile)
                 print(f"Decrypted: {filename} -> {new_filename}")

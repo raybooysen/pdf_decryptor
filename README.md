@@ -19,23 +19,42 @@ This app decrypts all password-protected PDFs in a specified folder, uses OpenAI
 
 ### 2. Prepare Your `.env` File
 
-Create a `.env` file in the project root with the following content:
+A sample `.env.example` file is provided. Copy it to `.env` and fill in your values:
+
+```sh
+cp .env.example .env
+```
+
+Edit `.env` to set your OpenAI API key, PDF password, input/output directories, the OpenAI model, and the prompt for filename generation.
+
+```sh
+cp .env.example .env
+```
+
+Edit `.env` to set your OpenAI API key, PDF password, input/output directories, the OpenAI model, and the prompt for filename generation.
+
+```sh
+cp .env.example .env
+```
+
+Edit `.env` to set your OpenAI API key, PDF password, input/output directories, the OpenAI model, and the prompt for filename generation.
 
 ```
-OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_API_KEY=sk-...your-openai-key...
 PDF_PASSWORD=your_pdf_password_here
-ENCRYPTED_DIR=Encrypted
-UNENCRYPTED_DIR=Unencrypted
+INPUT_DIR=input
+OUTPUT_DIR=output
+MODEL=gpt-4.1-nano-2025-04-14
+PROMPT=Given the following PDF content, generate a concise, descriptive filename for the file. Ideally, include the claimant name, date, and document type. Only return the filename, do not include any explanation.\n\nPDF Content:\n{text}
 ```
 
-- Replace `your_openai_api_key_here` with your OpenAI API key
-- Replace `your_pdf_password_here` with the PDF password
-- Adjust the folder names if needed
+- `MODEL` is required and specifies which OpenAI model to use for filename generation.
+- `PROMPT` is required and controls how filenames are generated from PDF content. `{text}` will be replaced with the PDF's extracted text.
 
 ### 3. Place Your PDFs
 
-- Put all encrypted PDFs in the folder specified by `ENCRYPTED_DIR` (default: `Encrypted`)
-- Make sure the destination folder (`UNENCRYPTED_DIR`, default: `Unencrypted`) exists or will be created
+- Put all encrypted PDFs in the folder specified by `INPUT_DIR` (default: `input`)
+- Make sure the destination folder (`OUTPUT_DIR`, default: `output`) exists or will be created
 
 ---
 
@@ -54,7 +73,7 @@ docker run --rm -v "$(pwd)":/app --env-file .env pdf-decryptor
 ```
 
 - This mounts your current directory into the Docker container and loads environment variables from `.env`.
-- All decrypted and renamed PDFs will appear in the `Unencrypted` folder (or as set in `.env`).
+- All decrypted and renamed PDFs will appear in the `output` folder (or as set in `.env`).
 
 ### Optional: Override Parameters
 
@@ -62,7 +81,7 @@ You can override any parameter at runtime:
 
 ```sh
 docker run --rm -v "$(pwd)":/app --env-file .env pdf-decryptor \
-  --encrypted_dir Encrypted --unencrypted_dir Unencrypted --password G3351502
+  --input input --output output --password your_pdf_password_here
 ```
 
 ---
