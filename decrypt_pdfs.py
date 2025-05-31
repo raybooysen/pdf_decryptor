@@ -10,9 +10,9 @@ def get_env_or_default(var, default=None):
     return os.getenv(var) if os.getenv(var) is not None else default
 
 def get_filename_from_openai(text, client):
-    prompt_template = os.getenv("PROMPT")
+    prompt_template = os.getenv("FILENAME_PROMPT")
     if not prompt_template:
-        print("Error: PROMPT environment variable must be set in your .env file.")
+        print("Error: FILENAME_PROMPT environment variable must be set in your .env file.")
         exit(1)
     model = os.getenv("MODEL")
     if not model:
@@ -35,6 +35,28 @@ def get_filename_from_openai(text, client):
     except Exception as e:
         print(f"OpenAI API failed: {e}")
         return None
+
+def decrypt_and_generate_filename(pdf_bytes, password, client):
+    try:
+        import io
+        infile = io.BytesIO(pdf_bytes)
+        reader = PdfReader(infile)
+        if reader.is_encrypted:
+            reader.decrypt(password)
+        writer = PdfWriter()
+        for page in reader.pages:
+            writer.add_page(page)
+        first_page_text = reader.pages[0].extract_text() if reader.pages else ''
+        new_filename = get_filename_from_openai(first_page_text or '', client)
+        if not new_filename:
+            new_filename = 'decrypted.pdf'
+        output_stream = io.BytesIO()
+        writer.write(output_stream)
+        output_stream.seek(0)
+        return output_stream, new_filename
+    except Exception as e:
+        print(f"Failed to decrypt PDF: {e}")
+        return None, None
 
 def main():
     parser = argparse.ArgumentParser(description="Decrypt PDFs and generate descriptive filenames using OpenAI.")
@@ -71,24 +93,16 @@ def main():
             input_path = os.path.join(input_dir, filename)
             try:
                 with open(input_path, 'rb') as infile:
-                    reader = PdfReader(infile)
-                    if reader.is_encrypted:
-                        reader.decrypt(password)
-                    writer = PdfWriter()
-                    for page in reader.pages:
-                        writer.add_page(page)
-                    # Extract text from first page for naming
-                    first_page_text = reader.pages[0].extract_text() if reader.pages else ''
-                    print(f"\n--- Extracted text for {filename} ---\n{first_page_text}\n--- End extracted text ---\n")
-                    new_filename = get_filename_from_openai(first_page_text or '', client)
+                    pdf_bytes = infile.read()
+                    output_stream, new_filename = decrypt_and_generate_filename(pdf_bytes, password, client)
                     if not new_filename:
                         new_filename = filename
                     output_path = os.path.join(output_dir, new_filename)
                     with open(output_path, 'wb') as outfile:
-                        writer.write(outfile)
+                        outfile.write(output_stream.read())
                 print(f"Processed: {filename} -> {new_filename}")
             except Exception as e:
                 print(f"Failed to process {filename}: {e}")
 
 if __name__ == "__main__":
-    main() 
+    main()

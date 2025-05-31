@@ -1,4 +1,6 @@
 PyPDF2
-pycryptodome
+python-dotenv
 openai
-python-dotenv 
+fastapi
+uvicorn
+python-multipart
