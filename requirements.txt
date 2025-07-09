@@ -1,4 +1,5 @@
 PyPDF2
+pycryptodome
 python-dotenv
 openai
 fastapi
